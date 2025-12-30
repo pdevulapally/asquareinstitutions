@@ -31,7 +31,7 @@ export default function Home() {
             </div>
             <div className="hidden md:flex items-center">
               <Link 
-                href="#contact" 
+                href="/contact" 
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 Contact Us
@@ -76,7 +76,7 @@ export default function Home() {
                   Testimonials
                 </Link>
                 <Link 
-                  href="#contact" 
+                  href="/contact" 
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
                   onClick={() => setMobileMenuOpen(false)}
                 >
