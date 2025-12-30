@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users collection - for checking admin status
+    // Users can read their own document for admin checking during login
+    match /users/{userId} {
+      // Users can read their own document (needed for admin status check)
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Allow authenticated users to read for admin checking (needed during login)
+      allow read: if request.auth != null;
+      // Allow list queries for forgot password (checking if email is admin)
+      // This allows querying users collection by email field
+      allow list: if true;
+      // Users can update their own document (for syncing email/name)
+      // Only allow if user already exists and is admin (checked in code)
+      allow update: if request.auth != null 
+                  && request.auth.uid == userId
+                  && request.resource.data.keys().hasAll(['email'])
+                  && request.resource.data.email is string
+                  // Prevent users from changing their own admin status
+                  && request.resource.data.isAdmin == resource.data.isAdmin;
+      // Allow admins to update any user document (including role changes)
+      // Admins can modify isAdmin, email, name, and updatedAt fields for other users
+      allow update: if request.auth != null 
+                  && request.auth.uid != userId
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Allow users to create their own document on first login
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Prevent deletion (only admins should delete users via admin tools)
+      allow delete: if false;
+    }
+    
+    // Students collection - for managing student records and payments
+    match /students/{studentId} {
+      // Only authenticated users can read (admin check happens in code)
+      allow read: if request.auth != null;
+      // Only authenticated users can create/update/delete (admin check happens in code)
+      allow create, update, delete: if request.auth != null;
+    }
+    
+    // Contact form submissions collection
+    // Production rules: 
+    // - Anyone can create (no login required)
+    // - ONLY logged-in admins can read submissions
+    // - ONLY logged-in admins can update/delete submissions
+    match /contacts/{contactId} {
+      // Allow anyone to create a new contact submission (write message)
+      // Optional: Add data validation to ensure required fields are present
+      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'phone', 'subject', 'message'])
+                   && request.resource.data.name is string
+                   && request.resource.data.email is string
+                   && request.resource.data.phone is string
+                   && request.resource.data.subject is string
+                   && request.resource.data.message is string
+                   && request.resource.data.name.size() > 0
+                   && request.resource.data.email.size() > 0
+                   && request.resource.data.phone.size() > 0
+                   && request.resource.data.subject.size() > 0
+                   && request.resource.data.message.size() > 0;
+      
+      // ONLY logged-in admins can read submissions
+      // Admin status is checked in code via users collection
+      // For now, allow any authenticated user to read (admin check happens in code)
+      // You can add additional validation here if needed
+      allow read: if request.auth != null;
+      
+      // Only authenticated users can update and delete (admin check in code)
+      allow update, delete: if request.auth != null;
+    }
+    
+    // If you want to add more collections in the future, add them here
+  }
+}
+

@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Contact form submissions collection
+    // This allows anyone to create a contact submission (no authentication required)
+    // But only authenticated admin users can read/delete submissions
+    match /contacts/{contactId} {
+      // Allow anyone to create a new contact submission
+      allow create: if true;
+      
+      // Only allow reading if the user is authenticated (optional - remove if you don't need this)
+      allow read: if false;
+      
+      // Only allow updates/deletes if the user is authenticated (optional - remove if you don't need this)
+      allow update, delete: if false;
+    }
+    
+    // Users collection - for storing user data and admin status
+    match /users/{userId} {
+      // Users can read their own document (needed for admin status check)
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Allow authenticated users to read for admin checking (needed during login)
+      allow read: if request.auth != null;
+      // Allow list queries for forgot password (checking if email is admin)
+      // This allows querying users collection by email field
+      allow list: if true;
+      // Users can update their own document (for syncing email/name)
+      // Prevent users from changing their own admin status
+      allow update: if request.auth != null 
+                  && request.auth.uid == userId
+                  && request.resource.data.isAdmin == resource.data.isAdmin;
+      // Allow admins to update any user document (including role changes)
+      // Admins can modify isAdmin, email, name, and updatedAt fields for other users
+      allow update: if request.auth != null 
+                  && request.auth.uid != userId
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Allow users to create their own document on first login
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Prevent deletion (only admins should delete users via admin tools)
+      allow delete: if false;
+    }
+    
+    // Students collection - for managing student records and payments
+    match /students/{studentId} {
+      // Only authenticated users can read (admin check happens in code)
+      allow read: if request.auth != null;
+      // Only authenticated users can create/update/delete (admin check happens in code)
+      allow create, update, delete: if request.auth != null;
+    }
+  }
+}
+
