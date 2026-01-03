@@ -21,7 +21,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "A² Institutions - Excellence in Education",
+  title: "Asquare Institutions For Excellence in Education",
   description: "Premier coaching institute for school students. Expert faculty, proven results, and comprehensive courses for academic excellence. Enroll today!",
 };
 
